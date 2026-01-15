@@ -3,215 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>𝙈َ𝘼َ𝙏َ𝙍ً𝙄𝙓َ JO | CLOUD SYSTEM</title>
+    <title>Matrix Jo | Ultimate Cloud POS</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --p-color: #0f172a; --m-green: #10b981; --accent: #6366f1; 
-            --white: #ffffff; --bg: #f8fafc; --text: #1e293b; --side-text: #94a3b8;
+            --p: #6366f1; --s: #10b981; --d: #ef4444;
+            --bg: #f8fafc; --card: #ffffff; --t: #0f172a; --m: #64748b;
         }
-
-        [data-theme="cloudy"] {
-            --p-color: #1e293b; --bg: #334155; --white: #475569; 
-            --text: #f8fafc; --accent: #38bdf8; --side-text: #cbd5e1;
-        }
-
         [data-theme="dark"] {
-            --p-color: #000000; --bg: #111111; --white: #1a1a1a; 
-            --text: #ffffff; --accent: #10b981; --side-text: #888;
+            --bg: #020617; --card: #0f172a; --t: #f1f5f9; --m: #94a3b8;
         }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: Cairo; }
+        body { background: var(--bg); color: var(--t); transition: .3s; overflow: hidden; }
+        
+        .loader { position:fixed; inset:0; background:#020617; display:flex; align-items:center; justify-content:center; z-index:9999; }
+        .spinner { width:50px; height:50px; border:5px solid #1e293b; border-top:5px solid var(--p); border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        [data-theme="royal"] {
-            --p-color: #2e1065; --bg: #4c1d95; --white: #5b21b6; 
-            --text: #fef3c7; --accent: #fbbf24; --side-text: #ddd6fe;
-        }
+        .page { display:none; height:100vh; }
+        .page.active { display:block; }
+        
+        .layout { display:flex; height:100vh; }
+        .sidebar { width:260px; background:#0f172a; color:#fff; padding:25px; display:flex; flex-direction:column; }
+        .nav { padding:14px; border-radius:12px; color:#94a3b8; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+        .nav.active, .nav:hover { background:#1e293b; color:#fff; }
+        
+        .content { flex:1; padding:30px; overflow:auto; }
+        .card { background:var(--card); padding:25px; border-radius:18px; box-shadow:0 10px 25px rgba(0,0,0,.05); margin-bottom:20px; }
+        
+        input { width:100%; padding:12px; border-radius:10px; border:1px solid #e5e7eb; margin-bottom:10px; outline:none; background:var(--bg); color:var(--t); }
+        button { padding:12px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:700; transition:.2s; }
+        .btn-p { background:var(--p); color:#fff; }
+        .btn-s { background:var(--s); color:#fff; }
+        .btn-d { background:var(--d); color:#fff; }
 
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); transition: 0.3s; overflow: hidden; user-select: none; }
-        .page { display: none; height: 100vh; animation: fadeIn 0.3s ease; }
-        .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        table { width:100%; border-collapse:collapse; margin-top:10px; }
+        th, td { text-align:center; padding:12px; border-bottom:1px solid rgba(0,0,0,0.05); }
 
-        .layout { display: flex; height: 100vh; }
-        .sidebar { width: 260px; background: var(--p-color); color: white; display: flex; flex-direction: column; padding: 20px; transition: 0.3s; }
-        .main-view { flex: 1; padding: 30px; overflow-y: auto; }
-
-        .auth-card, .stat-box, .content-card { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); color: var(--text); margin-bottom: 20px; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
-        .btn-main { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-
-        .theme-switcher { position: fixed; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 8px; background: var(--white); padding: 8px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid white; }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { background: var(--p-color); color: white; padding: 12px; }
-        td { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.05); text-align: center; }
-
-        #invoice-print { display: none; }
-        @media print {
-            body * { visibility: hidden; }
-            #invoice-print, #invoice-print * { visibility: visible; }
-            #invoice-print { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: black !important; background: white !important; }
-        }
+        @media print { body * { visibility:hidden; } #print, #print * { visibility:visible; } #print { position:absolute; top:0; left:0; width:100%; } }
     </style>
 </head>
 <body>
 
-    <div class="theme-switcher">
-        <div class="dot" style="background:#f8fafc" onclick="setTheme('light')"></div>
-        <div class="dot" style="background:#1e293b" onclick="setTheme('cloudy')"></div>
-        <div class="dot" style="background:#000000" onclick="setTheme('dark')"></div>
-        <div class="dot" style="background:#2e1065" onclick="setTheme('royal')"></div>
-    </div>
+<div id="loader" class="loader"><div class="spinner"></div></div>
 
-    <div id="auth-page" class="page active">
-        <div class="auth-card" style="max-width: 400px; margin: 80px auto; text-align: center;">
-            <h1 style="color: var(--accent); letter-spacing: 2px;">𝙈َ𝘼َ𝙏َ𝙍ً𝙄𝙓َ JO</h1>
-            <div id="login-section">
-                <input type="email" id="email" placeholder="البريد الإلكتروني">
-                <input type="password" id="pass" placeholder="كلمة المرور">
-                <button class="btn-main" style="width:100%" onclick="handleLogin()">دخول آمن</button>
-            </div>
+<div id="auth-page" class="page active">
+    <div style="height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a">
+        <div class="card" style="width:380px; text-align:center">
+            <h1 style="color:var(--p)">Matrix Jo</h1>
+            <p style="color:var(--m); margin-bottom:20px">نظام الإدارة السحابي</p>
+            <input id="email" placeholder="البريد الإلكتروني">
+            <input id="pass" type="password" placeholder="كلمة المرور">
+            <button class="btn-p" style="width:100%" onclick="login()">دخول</button>
         </div>
     </div>
+</div>
 
-    <div id="main-system" class="page">
-        <div class="layout">
-            <div class="sidebar">
-                <h2 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">𝙈َ𝘼َ𝙏َ𝙍ً𝙄𝙓َ JO</h2>
-                <div style="margin-top: 30px;">
-                    <div class="nav-item active">🖥️ نقطة البيع</div>
-                    <div id="admin-panel" class="nav-item" style="display:none; color:gold">👑 لوحة المالك</div>
+<div id="app-page" class="page">
+    <div class="layout">
+        <aside class="sidebar">
+            <h2 style="color:var(--p); text-align:center; margin-bottom:30px">Matrix Jo</h2>
+            <div class="nav active" onclick="view('pos', event)">🖥 نقطة البيع</div>
+            <div class="nav" onclick="view('rep', event)">📊 التقارير</div>
+            <div class="nav" onclick="view('support', event)">💬 الدعم الفني</div>
+            <div id="master-nav" class="nav" style="display:none; color:gold" onclick="view('master', event)">👑 اللوحة المركزية</div>
+            <button class="btn-d" style="margin-top:auto" onclick="logout()">خروج</button>
+        </aside>
+
+        <main class="content">
+            <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px">
+                <div><h2 id="store-name">...</h2><small id="user-email" style="color:var(--m)"></small></div>
+                <div id="clock" style="font-weight:bold"></div>
+            </header>
+
+            <div id="pos-view">
+                <div id="lock-msg" class="card" style="display:none; border:2px solid var(--d); background:#fff1f1">
+                    <h3 style="color:var(--d)">⚠️ النظام متوقف</h3>
+                    <p>يرجى تفعيل الاشتراك لاستخدام نقاط البيع.</p>
+                    <button class="btn-p" onclick="view('support')">اطلب كود تفعيل</button>
                 </div>
-                <button onclick="logout()" style="margin-top:auto; background: #ef4444; border:none; color:white; padding:10px; border-radius:10px; cursor:pointer">خروج</button>
-            </div>
-            <div class="main-view">
-                <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-                    <h2 id="b-name">...</h2>
-                    <div id="clock"></div>
-                </header>
-                
-                <div class="content-card">
-                    <h3>➕ إضافة فاتورة جديدة</h3>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="prod-name" placeholder="اسم الصنف" style="flex:2;">
-                        <input type="number" id="prod-price" placeholder="السعر" style="flex:1;">
-                        <button class="btn-main" onclick="addItemToBill()">إضافة</button>
+
+                <div id="pos-content">
+                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px">
+                        <div class="card">المبيعات<h2 id="sSales">0</h2></div>
+                        <div class="card">الأرباح<h2 id="sProfit">0</h2></div>
+                        <div class="card">الفواتير<h2 id="sCount">0</h2></div>
                     </div>
+                    <div class="card">
+                        <h3>إضافة صنف</h3>
+                        <div style="display:flex; gap:10px; margin-top:10px">
+                            <input id="pname" placeholder="الاسم" style="flex:3">
+                            <input id="pbuy" type="number" placeholder="شراء">
+                            <input id="psell" type="number" placeholder="بيع">
+                            <button class="btn-p" onclick="add()">إضافة</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>X</th></tr></thead>
+                            <tbody id="cart"></tbody>
+                        </table>
+                        <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center">
+                            <h2>الإجمالي: <span id="total">0</span></h2>
+                            <button class="btn-s" onclick="checkout()">حفظ وطباعة</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rep-view" style="display:none">
+                <div class="card"><h3>سجل العمليات</h3><div id="list"></div></div>
+            </div>
+
+            <div id="support-view" style="display:none">
+                <div class="card">
+                    <h3>💬 مركز الدعم والتفعيل</h3>
+                    <p style="margin:15px 0">حالة الحساب: <span id="status-txt">...</span></p>
+                    <p id="expiry-txt" style="font-size:12px; color:var(--m)"></p>
+                    <hr style="margin:15px 0; opacity:0.1">
+                    <input id="act-key" placeholder="أدخل كود التفعيل (XXXX XXXX)">
+                    <button class="btn-p" style="width:100%" onclick="activate()">تفعيل النسخة</button>
+                    <a href="https://wa.me/201224815487?text=السلام%20عليكم%20،%20حابب%20أستفسر%20عن%20الخدمة" target="_blank" class="btn-s" style="display:block; text-align:center; margin-top:10px; text-decoration:none">تواصل مع Matrix Jo عبر واتساب</a>
+                </div>
+            </div>
+
+            <div id="master-view" style="display:none">
+                <div class="card">
+                    <h2 style="color:gold">👑 لوحة التحكم المركزية</h2>
                     <table>
-                        <thead><tr><th>الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
-                        <tbody id="bill-items"></tbody>
+                        <thead><tr><th>المستخدم</th><th>الحالة</th><th>إجراء</th></tr></thead>
+                        <tbody id="master-list"></tbody>
                     </table>
-                    <div style="margin-top:20px; text-align:left">
-                        <h3>الإجمالي: <span id="total-val">0.00</span></h3>
-                        <button class="btn-main" style="background: var(--m-green)" onclick="printInvoice()">إتمام البيع وطباعة 🖨️</button>
-                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
+</div>
 
-    <div id="invoice-print">
-        <center>
-            <h1 style="font-size: 28px;">𝙈َ𝘼َ𝙏َ𝙍ً𝙄𝙓َ JO</h1>
-            <h3 id="print-b-name">...</h3>
-            <p>رقم الفاتورة: #INV-2026</p>
-            <hr>
-        </center>
-        <table style="width:100%">
-            <thead><tr><th>الصنف</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-            <tbody id="print-items"></tbody>
-        </table>
-        <hr>
-        <h2 style="text-align:left">الصافي: <span id="print-total">0</span></h2>
-        <center><p>شكراً لثقتكم في 𝙈َ𝘼َ𝙏َ𝙍ً𝙄𝙓َ JO</p></center>
-    </div>
+<div id="print">
+    <center>
+        <h1>Matrix Jo</h1>
+        <p id="pStore"></p><hr>
+        <table id="pTable" style="width:100%"></table><hr>
+        <h3>الإجمالي: <span id="pTotal"></span></h3>
+        <p id="pDate"></p>
+    </center>
+</div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCzVhJNBC-AWGobCLUrRKdBE3OnmUj2H5HI",
-            authDomain: "matrix-pos-e7336.firebaseapp.com",
-            projectId: "matrix-pos-e7336",
-            storageBucket: "matrix-pos-e7336.firebasestorage.app",
-            messagingSenderId: "855010877322",
-            appId: "1:855010877322:web:9d38df2dd72c446d893273"
-        };
+<script>
+/* CONFIG */
+const MASTER_EMAIL = "matrixbebo208@gmail.com";
+firebase.initializeApp({
+    apiKey: "AIzaSyCzVhJNBC-AWGobCLUrRKdBE3OnmUj2H5HI",
+    authDomain: "matrix-pos-e7336.firebaseapp.com",
+    projectId: "matrix-pos-e7336"
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+let cart = [], userData = null;
 
-        let bill = [];
-        const ADMIN_EMAIL = "macrosbebo208@gmail.com";
-
-        function setTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('matrix-theme', theme);
+/* AUTH MONITOR */
+auth.onAuthStateChanged(async u => {
+    if(u) {
+        const d = await db.collection("users").doc(u.uid).get();
+        userData = d.data();
+        if(!userData) { // تسجيل مستخدم جديد تلقائياً
+            userData = { name: "محل جديد", email: u.email, active: false, role: 'user', expiry: '' };
+            await db.collection("users").doc(u.uid).set(userData);
         }
-        setTheme(localStorage.getItem('matrix-theme') || 'light');
-
-        async function handleLogin() {
-            const email = document.getElementById('email').value, pass = document.getElementById('pass').value;
-            try {
-                const res = await auth.signInWithEmailAndPassword(email, pass);
-                checkUser(res.user.uid);
-            } catch (e) { alert("خطأ في الدخول"); }
+        updateUI();
+        showPage("app-page");
+        if(u.email === MASTER_EMAIL) {
+            document.getElementById('master-nav').style.display = "flex";
+            loadMaster();
         }
+    } else {
+        showPage("auth-page");
+    }
+    document.getElementById('loader').style.display = "none";
+});
 
-        async function checkUser(uid) {
-            const doc = await db.collection('users').doc(uid).get();
-            const data = doc.data();
-            if (data.role === 'admin' || data.active) {
-                showPage('main-system');
-                document.getElementById('b-name').innerText = data.name;
-                document.getElementById('print-b-name').innerText = data.name;
-                if(data.role === 'admin') document.getElementById('admin-panel').style.display = 'block';
-            } else { alert("حسابك غير مفعل"); }
-        }
+function login() {
+    auth.signInWithEmailAndPassword(email.value, pass.value).catch(e => alert("خطأ في الدخول"));
+}
+function logout() { auth.signOut(); location.reload(); }
 
-        function addItemToBill() {
-            const name = document.getElementById('prod-name').value;
-            const price = parseFloat(document.getElementById('prod-price').value);
-            if(name && price) {
-                bill.push({name, price});
-                renderBill();
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-price').value = '';
-            }
-        }
+/* UI LOGIC */
+function updateUI() {
+    storeName.innerText = userData.name;
+    userEmail.innerText = userData.email;
+    pStore.innerText = userData.name;
+    
+    const statusTxt = document.getElementById('status-txt');
+    if(userData.active) {
+        statusTxt.innerText = "نشط ✅"; statusTxt.style.color = "var(--s)";
+        posContent.style.display = "block"; lockMsg.style.display = "none";
+        expiryTxt.innerText = "ينتهي في: " + userData.expiry;
+    } else {
+        statusTxt.innerText = "غير مفعل ❌"; statusTxt.style.color = "var(--d)";
+        posContent.style.display = "none"; lockMsg.style.display = "block";
+    }
+    loadStats();
+}
 
-        function renderBill() {
-            let html = '', total = 0;
-            bill.forEach(item => {
-                html += `<tr><td>${item.name}</td><td>${item.price}</td><td>1</td><td>${item.price}</td></tr>`;
-                total += item.price;
-            });
-            document.getElementById('bill-items').innerHTML = html;
-            document.getElementById('total-val').innerText = total.toFixed(2);
-        }
+function view(v, e) {
+    const views = ['pos-view', 'rep-view', 'support-view', 'master-view'];
+    views.forEach(id => document.getElementById(id).style.display = (id === v+'-view') ? "block" : "none");
+    if(e) {
+        document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+    }
+}
 
-        function printInvoice() {
-            if(bill.length === 0) return alert("الفاتورة فارغة");
-            let printHtml = '';
-            bill.forEach(item => {
-                printHtml += `<tr><td>${item.name}</td><td>${item.price}</td><td>${item.price}</td></tr>`;
-            });
-            document.getElementById('print-items').innerHTML = printHtml;
-            document.getElementById('print-total').innerText = document.getElementById('total-val').innerText;
-            window.print();
-            bill = []; renderBill();
-        }
+/* POS LOGIC */
+function add() {
+    let n=pname.value, b=+pbuy.value, s=+psell.value;
+    if(!n || s<=0) return;
+    let f=cart.find(i => i.name === n);
+    f ? f.qty++ : cart.push({name:n, buy:b, sell:s, qty:1});
+    render(); pname.value=pbuy.value=psell.value="";
+}
 
-        function showPage(id) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+function render() {
+    let h="", t=0;
+    cart.forEach((i, x) => {
+        let sum = i.sell * i.qty; t += sum;
+        h += `<tr><td>${i.name}</td><td>${i.sell}</td><td>${i.qty}</td><td>${sum}</td><td onclick="cart.splice(${x},1);render()" style="color:red;cursor:pointer">✖</td></tr>`;
+    });
+    document.getElementById('cart').innerHTML = h;
+    total.innerText = t.toFixed(2);
+}
 
-        function logout() { auth.signOut(); location.reload(); }
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('ar-EG'); }, 1000);
-        auth.onAuthStateChanged(user => { if(user) checkUser(user.uid); });
-    </script>
+async function checkout() {
+    if(!cart.length) return;
+    let ts = cart.reduce((a,i) => a + i.sell*i.qty, 0);
+    let tb = cart.reduce((a,i) => a + i.buy*i.qty, 0);
+    let inv = {
+        uid: auth.currentUser.uid, items: cart, total: ts, profit: ts-tb,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        date: new Date().toLocaleString("ar-EG")
+    };
+    await db.collection("invoices").add(inv);
+    
+    let pt = "<tr><th>الصنف</th><th>السعر</th><th>الكمية</th></tr>";
+    cart.forEach(i => pt += `<tr><td>${i.name}</td><td>${i.sell}</td><td>${i.qty}</td></tr>`);
+    pTable.innerHTML = pt; pTotal.innerText = ts; pDate.innerText = inv.date;
+    window.print(); cart=[]; render(); loadStats();
+}
+
+/* MASTER CONTROL */
+async function loadMaster() {
+    const q = await db.collection("users").get();
+    let h = "";
+    q.forEach(d => {
+        let u = d.data();
+        h += `<tr><td>${u.email}</td><td>${u.active?'مفعل':'معطل'}</td><td><button class="btn-p" onclick="toggleUser('${d.id}', ${!u.active})">تغيير</button></td></tr>`;
+    });
+    document.getElementById('master-list').innerHTML = h;
+}
+
+async function toggleUser(id, st) {
+    let exp = st ? new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString() : '';
+    await db.collection("users").doc(id).update({ active: st, expiry: exp });
+    loadMaster();
+}
+
+async function activate() {
+    let k = document.getElementById('act-key').value;
+    // كود تفعيل وهمي للتجربة، يمكنك تغييره أو ربطه بقاعدة بيانات الأكواد
+    if(k.length >= 8) { 
+        alert("يرجى إرسال الكود للدعم الفني لتفعيله لك.");
+        window.open(`https://wa.me/201224815487?text=أرغب%20في%20تفعيل%20كودي:%20${k}`);
+    }
+}
+
+/* TOOLS */
+function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+async function loadStats() {
+    let q = await db.collection("invoices").where("uid","==",auth.currentUser.uid).orderBy("timestamp","desc").limit(10).get();
+    let s=0, p=0, c=0, r="<table><tr><th>التاريخ</th><th>الإجمالي</th></tr>";
+    q.forEach(d => { let v=d.data(); s+=v.total; p+=v.profit; c++; r+=`<tr><td>${v.date}</td><td>${v.total}</td></tr>` });
+    sSales.innerText=s.toFixed(2); sProfit.innerText=p.toFixed(2); sCount.innerText=c;
+    list.innerHTML = r + "</table>";
+}
+setInterval(() => clock.innerText = new Date().toLocaleTimeString("ar-EG"), 1000);
+</script>
 </body>
 </html>
